@@ -192,7 +192,7 @@
         };
 
         const SkeletonLoader = ({ viewMode }) => {
-            const count = 6; // Increased skeleton count for wider screens
+            const count = 6;
             return React.createElement(React.Fragment, null,
                 [...Array(count)].map((_, i) => 
                      React.createElement('div', { key: i, className: "modern-card p-4 h-[380px] animate-pulse bg-white" },
@@ -239,7 +239,6 @@
 
             useEffect(() => {
                 const handleScroll = () => {
-                    // Optimization: Use a larger buffer (400px) and only update if not loading
                     const isBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 400;
                     if (isBottom && !loading) {
                         setVisibleCount(prev => prev + 12);
@@ -250,12 +249,21 @@
                 return () => window.removeEventListener('scroll', handleScroll);
             }, [loading]);
 
+            // Fetch Data with Numeric ID Filter
             useEffect(() => {
                 const studentsRef = ref(db, 'students');
                 const unsubscribe = onValue(studentsRef, (snapshot) => {
                     const data = snapshot.val();
                     if (data) {
-                        const list = Object.entries(data).map(([key, value]) => ({ id: key, ...value }));
+                        let list = Object.entries(data).map(([key, value]) => ({ id: key, ...value }));
+                        
+                        // NEW: Filter to ensure ID is strictly numeric (digits only)
+                        list = list.filter(student => {
+                            const id = student['អត្តលេខ'];
+                            // Validate using Regex: ^\d+$ matches string with only digits 0-9
+                            return id && /^\d+$/.test(String(id).trim());
+                        });
+
                         setStudents(list);
                     } else {
                         setStudents([]);
@@ -268,7 +276,7 @@
             const filteredStudents = useMemo(() => {
                 let processedList = [];
                 
-                // 1. Filtering Logic
+                // 1. Filtering Logic (Search)
                 if (!debouncedTerm) {
                     processedList = [...students];
                 } else {
@@ -298,7 +306,6 @@
                     const nameA = (a['ឈ្មោះ'] || '').trim();
                     const nameB = (b['ឈ្មោះ'] || '').trim();
                     
-                    // Priority mapping: lower number = higher placement
                     const priority = {
                         'ប៊ន ចន្ថា': 1,
                         'វង់ សុខភ័ក្ត': 2,
